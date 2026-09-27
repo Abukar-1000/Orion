@@ -43,13 +43,6 @@ void LoggerBase::Clear()
         throw std::runtime_error("Log file stream is not initialized.");
     }
 
-    this->stream->close();
-    this->stream = std::make_unique<std::ofstream>(this->logFilePath, std::ios::trunc);
-    if (!this->stream->is_open()) 
-    {
-        throw std::runtime_error("Failed to open log file: " + this->logFilePath.string());
-    }
-    
     std::error_code ec;
     std::filesystem::resize_file(this->logFilePath, 0, ec);
     
