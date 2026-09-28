@@ -4,7 +4,8 @@ bool KeyboardWinStrategy::Write(const std::string& msg)
 {
     const size_t count = msg.length() * 2;
     std::vector<INPUT> characters;
-
+    characters.reserve(count);
+    
     for (auto &&str: msg)
     {
         auto ascii = static_cast<WORD>(str);
