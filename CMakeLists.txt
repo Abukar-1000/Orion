@@ -8,6 +8,17 @@ add_executable(
     include/Logger/LoggerBase.h
     include/Config/Limits.h
     src/Logger/LoggerBase.cpp
+    include/Command/Visitor/CommandVisitor.h
+    include/Command/ICommand.h
+    include/Command/Commands/SavePointCommand.h
+    src/Command/Commands/SavePointCommand.cpp
+    include/Command/CommandBase.h
+    src/Command/CommandBase.cpp
+    include/Command/Commands/SavePointMoveCommand.h
+    src/Command/Commands/SavePointMoveCommand.cpp
+    include/Keyboard/IKeyboard.h
+    include/Keyboard/KeyboardWinStrategy.h
+    src/Keyboard/KeyboardWinStrategy.cpp
 )
 
 include(CTest)
