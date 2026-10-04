@@ -34,5 +34,5 @@ int main(int argc, char** argv){
     std::cout << "Executing command: '" << "sp " + argStr << "'\n";
     command.Execute("spm " + argStr);
     auto keyboard = KeyboardWinStrategy();
-    keyboard.Write("This is a test run....");
+    keyboard.Write("fr This is a test run....>|{}[]/\\");
 }

@@ -1,23 +1,27 @@
 #ifndef KeyboardWinStrategy_H
 #define KeyboardWinStrategy_H
-#include <iostream>
 #include <format>
 #include <memory>
+#include <iostream>
 #include "windows.h"
-#include "IKeyboard.h"
 #include <algorithm>
+#include "IKeyboard.h"
+#include "./KeyAction.h"
+#include <unordered_map>
 #include "../Logger/LoggerBase.h"
 
+using KeyMap = std::unordered_map<char, KeyAction>;
 class KeyboardWinStrategy : public IKeyboard
 {
     protected:
-        std::unique_ptr<int[]> keyMap;
-        void MapKeys(void);
-        bool IsLowerCase(int _char);
         LoggerBase errLogger;
+        std::unique_ptr<KeyMap> keyMap;
+        void BuildKeyMap(void);
+        KeyAction MapKey(const char& _char);
+    
     public:
-        virtual ~KeyboardWinStrategy() = default;
         KeyboardWinStrategy();
+        virtual ~KeyboardWinStrategy() = default;
         virtual bool Write(const std::string& text) override;
         virtual bool Clear(void) override; 
 };

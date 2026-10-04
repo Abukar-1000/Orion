@@ -4,36 +4,16 @@ bool KeyboardWinStrategy::Write(const std::string& msg)
 {
     const size_t count = msg.length() * 2;
     std::vector<INPUT> characters;
-    characters.reserve(count);
-    
+    // characters.reserve(count);
+
     for (auto &&str: msg)
     {
-        auto ascii = static_cast<WORD>(str);
-        if (IsLowerCase(ascii))
-        {
-            ascii = ascii ^ 0x20;
-        }
+        auto actions = this->MapKey(str);
 
-        // down press
-        characters.push_back(
-            INPUT {
-                .type = INPUT_KEYBOARD,
-                .ki {
-                    .wVk = ascii
-                }
-            }
-        );
-        
-        // up press
-        characters.push_back(
-            INPUT {
-                .type = INPUT_KEYBOARD,
-                .ki {
-                    .wVk = ascii,
-                    .dwFlags = KEYEVENTF_KEYUP 
-                }
-            }
-        );
+        for (auto action: actions.Get())
+        {
+            characters.push_back(action);
+        }
     }
 
     UINT uSent = SendInput((UINT)characters.size(), characters.data(), sizeof(INPUT));
@@ -44,15 +24,29 @@ bool KeyboardWinStrategy::Write(const std::string& msg)
         auto err = HRESULT_FROM_WIN32(GetLastError());
         std::string msg = std::format("Failed to write with error: {}", err);
         std::cout << msg << "\n";
-        // throw std::runtime_error(msg);
+        throw std::runtime_error(msg);
     }
 
     return true;
 }
 
-bool KeyboardWinStrategy::IsLowerCase(int _char)
+KeyAction KeyboardWinStrategy::MapKey(const char& _char)
 {
-    return _char > static_cast<int>('Z');
+    const WORD SHIFT = 0x10;
+    const KeyAction NoOP = KeyAction().WithKey(SHIFT, false).Build();
+    try
+    {
+        if (this->keyMap == nullptr)
+        {
+            return NoOP;
+        }
+
+        return (*(this->keyMap))[_char];
+    }
+    catch(...)
+    {
+        return NoOP;
+    }
 }
 
 bool KeyboardWinStrategy::Clear(void)
@@ -60,18 +54,70 @@ bool KeyboardWinStrategy::Clear(void)
     return true;
 }
 
-void KeyboardWinStrategy::MapKeys(void)
+void KeyboardWinStrategy::BuildKeyMap(void)
 {
-    for (int i = 0; i < 26; ++i)
+    const WORD A = 0x41;
+    const WORD Z = A + 26;
+
+    for (int letter = A; letter < Z; ++letter)
     {
-        this->keyMap[i] = static_cast<int>('A' + i);
+        char uppercase = static_cast<char>(letter);
+        KeyAction uppercaseAction = KeyAction().WithKey(letter, false).Build();
+        this->keyMap->insert(std::pair<char, KeyAction>(uppercase, uppercaseAction));
+        
+        WORD lowercaseLetter = letter ^ 0x20;
+        char lowercase = static_cast<char>(lowercaseLetter);
+        KeyAction lowercaseAction = KeyAction().WithKey(lowercaseLetter, false).Build();
+        this->keyMap->insert(std::pair<char, KeyAction>(lowercase, uppercaseAction));
+    }
+
+    const WORD SHIFT = 0x10;
+    const std::pair<char, KeyAction> specialChars[] = 
+    {
+        { ';', KeyAction().WithKey(0xBA, false).Build() },
+        { '+', KeyAction().WithKey(0xBB, false).Build() },
+        { ',', KeyAction().WithKey(0xBC, false).Build() },
+        { '-', KeyAction().WithKey(0xBD, false).Build() },
+        { '.', KeyAction().WithKey(0xBE, false).Build() },
+        { '/', KeyAction().WithKey(0xBF, false).Build() },
+        { ' ', KeyAction().WithKey(0x20, false).Build() },
+        { '[', KeyAction().WithKey(0xDB, false).Build() },
+        { ']', KeyAction().WithKey(0xDD, false).Build() },
+        { '\\', KeyAction().WithKey(0xDC, false).Build() },
+        { '>', KeyAction().WithKey(SHIFT, true).WithKey(0xBF, false).Build() },
+        { '_', KeyAction().WithKey(SHIFT, true).WithKey(0xBD, false).Build() },
+        { '|', KeyAction().WithKey(SHIFT, true).WithKey(0xDC, false).Build() },
+        { '{', KeyAction().WithKey(SHIFT, true).WithKey(0xDB, false).Build() },
+        { '}', KeyAction().WithKey(SHIFT, true).WithKey(0xDD, false).Build() }
+    };
+
+    for (short i = 0; i < 15; ++i)
+    {
+        this->keyMap->insert(specialChars[i]);
     }
 }
 
 KeyboardWinStrategy::KeyboardWinStrategy()
-:   keyMap(std::make_unique<int[]>(36)),
+:   keyMap(std::make_unique<KeyMap>()),
     errLogger(LogLevel::Lvl_ERROR)
 {
-    std::fill_n(keyMap.get(), 36, 0);
-    this->MapKeys();
+    this->keyMap->reserve(68);
+    this->BuildKeyMap();
+    
+    auto start = this->keyMap->begin();
+    auto end = this->keyMap->end();
+
+    for (auto it = start; it != end; ++it)
+    {
+        if (it == nullptr) continue;
+
+        std::string chars = "";
+        for (auto action : it->second.Get())
+        {
+            if (action.ki.dwFlags == KEYEVENTF_KEYUP) continue;
+            chars += static_cast<char>(action.ki.wVk);
+        }
+
+        std::cout << it->first << " => " << chars << "\n";
+    }
 }

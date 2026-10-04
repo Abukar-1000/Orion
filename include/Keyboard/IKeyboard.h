@@ -4,6 +4,9 @@
 
 class IKeyboard
 {
+    protected:
+        short MaxLineLength = 1024;
+        short UNDEFINED_KEY = 0x3F;
     public:
         virtual ~IKeyboard() = default;
         virtual bool Write(const std::string& text) = 0;

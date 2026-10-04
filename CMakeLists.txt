@@ -19,6 +19,8 @@ add_executable(
     include/Keyboard/IKeyboard.h
     include/Keyboard/KeyboardWinStrategy.h
     src/Keyboard/KeyboardWinStrategy.cpp
+    include/Keyboard/KeyAction.h
+    src/Keyboard/KeyAction.cpp
 )
 
 include(CTest)
